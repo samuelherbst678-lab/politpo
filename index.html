@@ -524,13 +524,12 @@ function renderParliamentSvg(){
   const rOuter = r;
   const rInner = Math.max(10, r - thickness);
 
-  // We want a TOP half donut (∩). So place center near bottom of svg.
   const pad = 18;
   const w = 2*r + 2*pad;
-  const h = r + pad + 10;     // only top half + a little space
+  const h = r + pad + 10;
 
   const cx = pad + r;
-  const cy = pad + r;         // center at bottom edge of visible half
+  const cy = pad + r;
 
   svg.setAttribute("width", w);
   svg.setAttribute("height", h);
@@ -539,14 +538,14 @@ function renderParliamentSvg(){
 
   const total = Math.max(1, Number(state.parliamentSize)||1);
 
-  // Angles: from left (PI) to right (0), moving clockwise (decreasing angle)
-  let a = Math.PI;
+  // ✅ FIX: Halbkreis unten (Öffnung nach unten) => wir zeichnen die UNTERE Halbkugel:
+  // Winkel von 0 (rechts) bis PI (links), also "unten" statt "oben".
+  let a = 0;
 
-  // Draw each donut segment as filled path with thin white stroke
   state.parties.forEach(p=>{
     const seats = Number(p.seats)||0;
     const delta = (seats / total) * Math.PI;
-    const aNext = a - delta;
+    const aNext = a + delta;
 
     if(delta > 0.00001){
       const pathD = donutSegmentPath(cx, cy, rOuter, rInner, a, aNext);
@@ -561,6 +560,24 @@ function renderParliamentSvg(){
 
     a = aNext;
   });
+
+  // Konturen passend zur unteren Halbrundung
+  const contourOuter = document.createElementNS("http://www.w3.org/2000/svg","path");
+  contourOuter.setAttribute("d", arcPath(cx, cy, rOuter, 0, Math.PI));
+  contourOuter.setAttribute("fill","none");
+  contourOuter.setAttribute("stroke","#ffffff");
+  contourOuter.setAttribute("stroke-width", "4");
+  contourOuter.setAttribute("opacity","0.95");
+  svg.appendChild(contourOuter);
+
+  const contourInner = document.createElementNS("http://www.w3.org/2000/svg","path");
+  contourInner.setAttribute("d", arcPath(cx, cy, rInner, 0, Math.PI));
+  contourInner.setAttribute("fill","none");
+  contourInner.setAttribute("stroke","#ffffff");
+  contourInner.setAttribute("stroke-width", "4");
+  contourInner.setAttribute("opacity","0.95");
+  svg.appendChild(contourInner);
+}
 
   // Optional: a clean outer/inner white contour like iOS screenshot (subtle)
   const contourOuter = document.createElementNS("http://www.w3.org/2000/svg","path");
