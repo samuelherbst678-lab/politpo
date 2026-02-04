@@ -72,7 +72,7 @@ body{
 .sub{ font-size:14px; color:var(--muted); font-weight:650; margin-top:2px; }
 
 /* Parlament */
-.parliament{ display:flex; justify-content:center; margin:14px 0 6px; }
+.parliament{ display:flex; justify-content:center; margin:10px 0 6px; }
 svg{ overflow:visible; display:block; }
 
 .legend{
@@ -260,18 +260,8 @@ hr.sep{
 
 .orderBtns .iconBtn{ width:36px; }
 
-.dragHint{
-  font-size:12px;
-  color:rgba(255,255,255,.50);
-  margin-top:6px;
-}
-
-[draggable="true"]{
-  user-select:none;
-}
-.dragOver{
-  outline:2px solid rgba(255,255,255,.22);
-}
+[draggable="true"]{ user-select:none; }
+.dragOver{ outline:2px solid rgba(255,255,255,.22); }
 </style>
 </head>
 
@@ -354,27 +344,17 @@ hr.sep{
       <div class="fieldRow">
         <div class="field">
           <label>Halbkreis: Dicke</label>
-          <input id="editStroke" type="range" min="10" max="90" step="1" />
+          <input id="editThickness" type="range" min="20" max="120" step="1" />
         </div>
         <div class="field">
-          <label>Halbkreis: Radius</label>
-          <input id="editRadius" type="range" min="80" max="170" step="1" />
-        </div>
-      </div>
-
-      <div class="fieldRow">
-        <div class="field">
-          <label>Spalt zwischen Segmenten (Grad)</label>
-          <input id="editGapDeg" type="range" min="0" max="6" step="0.1" />
-        </div>
-        <div class="field">
-          <label>Spaltanzeige</label>
-          <input id="gapReadout" type="text" disabled />
+          <label>Halbkreis: Größe</label>
+          <input id="editRadius" type="range" min="90" max="190" step="1" />
         </div>
       </div>
 
       <div class="small">
-        Reihenfolge ist anpassbar: Nutze ↑/↓ bei den Parteien. Am Desktop kannst du zusätzlich per Drag &amp; Drop schieben.
+        Segment-Trennung: Es gibt keine “Lücke”, sondern nur eine dünne weiße Linie (fix). Reihenfolge anpassbar mit ↑/↓.
+        Am Desktop geht zusätzlich Drag &amp; Drop.
       </div>
 
       <hr class="sep" />
@@ -414,9 +394,9 @@ hr.sep{
 const DEFAULT_STATE = {
   leader: { name: "Markus Söder", title: "Ministerpräsident", color: "#444444" },
   parliamentSize: 203,
-  radius: 120,
-  stroke: 56,      // noch dicker als vorher
-  gapDeg: 1.2,     // <-- Spalt: default
+  radius: 140,
+  thickness: 72,          // dicker Ring (wie du willst)
+  separator: 4,           // <-- dünne weiße Linie (Stroke) zwischen Segmenten
   parties: [
     { name: "Grüne", seats: 32, color: "#0a8f08", gov: false },
     { name: "SPD", seats: 17, color: "#e00000", gov: false },
@@ -464,6 +444,37 @@ function escapeHtml(s){
 }
 
 /* =======================
+   GEOMETRY (donut segments)
+======================= */
+function polar(cx, cy, r, a){
+  // a in radians; 0 = right, PI/2 = down (SVG coords y down)
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+
+function donutSegmentPath(cx, cy, rOuter, rInner, aStart, aEnd){
+  // draws along top half: angles decreasing from PI to 0 (clockwise in our usage)
+  const p1 = polar(cx, cy, rOuter, aStart);
+  const p2 = polar(cx, cy, rOuter, aEnd);
+  const p3 = polar(cx, cy, rInner, aEnd);
+  const p4 = polar(cx, cy, rInner, aStart);
+
+  const delta = Math.abs(aStart - aEnd);
+  const largeArc = delta > Math.PI ? 1 : 0;
+
+  // If we go from aStart (bigger) to aEnd (smaller), we want the short arc on top => sweep 0
+  const sweepOuter = 0;
+  const sweepInner = 1;
+
+  return [
+    `M ${p1.x.toFixed(3)} ${p1.y.toFixed(3)}`,
+    `A ${rOuter} ${rOuter} 0 ${largeArc} ${sweepOuter} ${p2.x.toFixed(3)} ${p2.y.toFixed(3)}`,
+    `L ${p3.x.toFixed(3)} ${p3.y.toFixed(3)}`,
+    `A ${rInner} ${rInner} 0 ${largeArc} ${sweepInner} ${p4.x.toFixed(3)} ${p4.y.toFixed(3)}`,
+    "Z"
+  ].join(" ");
+}
+
+/* =======================
    RENDER
 ======================= */
 function render(){
@@ -505,77 +516,77 @@ function render(){
 
 function renderParliamentSvg(){
   const svg = $("parliamentSvg");
-  const r = Number(state.radius);
-  const stroke = Number(state.stroke);
-  const gapDeg = Number(state.gapDeg);
 
-  const pad = 20;
-  svg.setAttribute("width", r*2 + pad);
-  svg.setAttribute("height", r + 40);
+  const r = Number(state.radius);
+  const thickness = Number(state.thickness);
+  const sep = Number(state.separator);
+
+  const rOuter = r;
+  const rInner = Math.max(10, r - thickness);
+
+  // We want a TOP half donut (∩). So place center near bottom of svg.
+  const pad = 18;
+  const w = 2*r + 2*pad;
+  const h = r + pad + 10;     // only top half + a little space
+
+  const cx = pad + r;
+  const cy = pad + r;         // center at bottom edge of visible half
+
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
   svg.innerHTML = "";
 
   const total = Math.max(1, Number(state.parliamentSize)||1);
 
-  // Underlay: draw each segment with white border, then colored stroke.
-  // Gap: subtract gapDeg on both sides of segment (when possible).
-  let startDeg = 180; // half circle left
+  // Angles: from left (PI) to right (0), moving clockwise (decreasing angle)
+  let a = Math.PI;
+
+  // Draw each donut segment as filled path with thin white stroke
   state.parties.forEach(p=>{
     const seats = Number(p.seats)||0;
-    const segDegFull = (seats / total) * 180;
+    const delta = (seats / total) * Math.PI;
+    const aNext = a - delta;
 
-    // apply gap: reduce the visible degrees
-    const segDeg = Math.max(0, segDegFull - gapDeg);
-    const segStart = startDeg + gapDeg/2;
-    const segEnd = segStart + segDeg;
-
-    // Draw only if visible
-    if(segDeg > 0.001){
-      const pathD = arcPathDeg(r, r, r, segStart, segEnd);
-
-      const under = document.createElementNS("http://www.w3.org/2000/svg","path");
-      under.setAttribute("d", pathD);
-      under.setAttribute("fill","none");
-      under.setAttribute("stroke","#ffffff");
-      under.setAttribute("stroke-width", stroke + 6);
-      under.setAttribute("stroke-linecap","butt");
-      under.setAttribute("opacity","0.95");
-
-      const path = document.createElementNS("http://www.w3.org/2000/svg","path");
-      path.setAttribute("d", pathD);
-      path.setAttribute("fill","none");
-      path.setAttribute("stroke", p.color);
-      path.setAttribute("stroke-width", stroke);
-      path.setAttribute("stroke-linecap","butt");
-
-      svg.appendChild(under);
-      svg.appendChild(path);
+    if(delta > 0.00001){
+      const pathD = donutSegmentPath(cx, cy, rOuter, rInner, a, aNext);
+      const seg = document.createElementNS("http://www.w3.org/2000/svg","path");
+      seg.setAttribute("d", pathD);
+      seg.setAttribute("fill", p.color);
+      seg.setAttribute("stroke", "#ffffff");
+      seg.setAttribute("stroke-width", String(sep));
+      seg.setAttribute("stroke-linejoin","round");
+      svg.appendChild(seg);
     }
 
-    startDeg += segDegFull; // advance by full share (keeps correct global proportions)
+    a = aNext;
   });
 
-  // Inner cutout (ring look)
-  const inner = document.createElementNS("http://www.w3.org/2000/svg","circle");
-  inner.setAttribute("cx", r);
-  inner.setAttribute("cy", r);
-  inner.setAttribute("r", clamp(r - (stroke/2) - 6, 10, 999));
-  inner.setAttribute("fill", "#1c1c1e");
-  svg.appendChild(inner);
+  // Optional: a clean outer/inner white contour like iOS screenshot (subtle)
+  const contourOuter = document.createElementNS("http://www.w3.org/2000/svg","path");
+  contourOuter.setAttribute("d", arcPath(cx, cy, rOuter, Math.PI, 0));
+  contourOuter.setAttribute("fill","none");
+  contourOuter.setAttribute("stroke","#ffffff");
+  contourOuter.setAttribute("stroke-width", "4");
+  contourOuter.setAttribute("opacity","0.95");
+  svg.appendChild(contourOuter);
+
+  const contourInner = document.createElementNS("http://www.w3.org/2000/svg","path");
+  contourInner.setAttribute("d", arcPath(cx, cy, rInner, Math.PI, 0));
+  contourInner.setAttribute("fill","none");
+  contourInner.setAttribute("stroke","#ffffff");
+  contourInner.setAttribute("stroke-width", "4");
+  contourInner.setAttribute("opacity","0.95");
+  svg.appendChild(contourInner);
 }
 
-function arcPathDeg(cx, cy, radius, startDeg, endDeg){
-  // convert degrees to radians
-  const toRad = (d)=>(d-90)*Math.PI/180;
-  const a1 = toRad(startDeg);
-  const a2 = toRad(endDeg);
-
-  const x1 = cx + radius*Math.cos(a1);
-  const y1 = cy + radius*Math.sin(a1);
-  const x2 = cx + radius*Math.cos(a2);
-  const y2 = cy + radius*Math.sin(a2);
-
-  // For segments within 180°, large-arc is always 0 here
-  return `M ${x1.toFixed(3)} ${y1.toFixed(3)} A ${radius} ${radius} 0 0 1 ${x2.toFixed(3)} ${y2.toFixed(3)}`;
+function arcPath(cx, cy, radius, aStart, aEnd){
+  // aStart > aEnd for top half; sweep 0
+  const p1 = polar(cx, cy, radius, aStart);
+  const p2 = polar(cx, cy, radius, aEnd);
+  const largeArc = Math.abs(aStart - aEnd) > Math.PI ? 1 : 0;
+  const sweep = 0;
+  return `M ${p1.x.toFixed(3)} ${p1.y.toFixed(3)} A ${radius} ${radius} 0 ${largeArc} ${sweep} ${p2.x.toFixed(3)} ${p2.y.toFixed(3)}`;
 }
 
 function renderLegend(){
@@ -626,11 +637,8 @@ function renderEditor(){
   $("editLeaderColor").value = state.leader.color;
 
   $("editParliamentSize").value = state.parliamentSize;
-  $("editStroke").value = state.stroke;
+  $("editThickness").value = state.thickness;
   $("editRadius").value = state.radius;
-
-  $("editGapDeg").value = state.gapDeg;
-  $("gapReadout").value = `${Number(state.gapDeg).toFixed(1)}°`;
 
   const body = $("partyTableBody");
   body.innerHTML = "";
@@ -691,7 +699,6 @@ function renderEditor(){
     });
   });
 
-  // Drag & drop (desktop)
   setupDnD(body);
 }
 
@@ -763,18 +770,13 @@ $("editParliamentSize").addEventListener("input", (e)=>{
   render();
 });
 
-$("editStroke").addEventListener("input", (e)=>{
-  state.stroke = clamp(Number(e.target.value)||56, 10, 90);
+$("editThickness").addEventListener("input", (e)=>{
+  state.thickness = clamp(Number(e.target.value)||72, 20, 120);
   render();
 });
 
 $("editRadius").addEventListener("input", (e)=>{
-  state.radius = clamp(Number(e.target.value)||120, 80, 170);
-  render();
-});
-
-$("editGapDeg").addEventListener("input", (e)=>{
-  state.gapDeg = clamp(Number(e.target.value)||1.2, 0, 6);
+  state.radius = clamp(Number(e.target.value)||140, 90, 190);
   render();
 });
 
