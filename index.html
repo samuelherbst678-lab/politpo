@@ -1,825 +1,347 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Parlament Dashboard – editierbar</title>
+<meta charset="UTF-8">
+<title>Konklave Final</title>
+
 <style>
-:root{
-  --bg:#000;
-  --card:#1c1c1e;
-  --text:#fff;
-  --muted:#9e9ea4;
-  --row:#111;
-  --input:#0f0f10;
-  --inputBorder:rgba(255,255,255,.14);
-  --btn:rgba(255,255,255,.10);
+body { font-family: Arial; text-align:center; background:#f4f4f4; }
+
+.wrapper { max-width:1100px; margin:auto; }
+
+/* PAPAM */
+.papam {
+    display:none;
+    background:linear-gradient(135deg,gold,#fff3b0);
+    padding:20px;
+    margin:20px auto;
+    max-width:700px;
+    border:2px solid #d4af37;
+    white-space:pre-line;
 }
 
-*{ box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,Segoe UI,Roboto,Arial,sans-serif; }
-
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  display:flex;
-  justify-content:center;
+/* LEGEND */
+.legend {
+    position:fixed;
+    right:10px;
+    top:10px;
+    background:white;
+    padding:8px;
+    border:1px solid #aaa;
+    font-size:12px;
 }
 
-.container{
-  width:390px;
-  padding:16px;
+/* CARDS */
+.container {
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+    justify-content:center;
 }
 
-.card{
-  background:var(--card);
-  border-radius:16px;
-  padding:16px;
-  margin-bottom:16px;
-  border:1px solid rgba(255,255,255,.06);
+.card {
+    width:200px;
+    background:white;
+    border:1px solid #aaa;
+    position:relative;
 }
 
-.card h2{
-  margin:0 0 12px 0;
-  font-size:22px;
-  letter-spacing:.2px;
+.img {
+    height:130px;
+    background:#ddd;
+    background-size:cover;
 }
 
-.label{
-  color:var(--muted);
-  font-size:14px;
-  margin:12px 0 6px;
+.delete-btn {
+    position:absolute;
+    top:3px;
+    right:4px;
+    font-size:10px;
+    background:red;
+    color:white;
+    border:none;
 }
 
-.row{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:12px;
-  border-radius:12px;
-  background:var(--row);
-  margin-bottom:10px;
-  border:1px solid rgba(255,255,255,.06);
+input, textarea {
+    width:90%;
+    margin:3px;
+    text-align:center;
 }
 
-.avatar{
-  width:36px; height:36px; border-radius:50%;
-  background:#444;
-  border:1px solid rgba(255,255,255,.10);
+.type {
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:22px;
+    font-size:12px;
+    color:white;
+    cursor:pointer;
 }
 
-.name{ font-size:18px; font-weight:800; }
-.sub{ font-size:14px; color:var(--muted); font-weight:650; margin-top:2px; }
-
-/* Parlament */
-.parliament{ display:flex; justify-content:center; margin:10px 0 6px; }
-svg{ overflow:visible; display:block; }
-
-.legend{
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  margin-top:10px;
+/* MATRIX */
+table {
+    border-collapse:collapse;
+    margin:30px auto;
+    background:white;
 }
 
-.legend-item{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  font-size:13px;
-  min-width:0;
-  flex:1 1 0;
+td,th {
+    border:1px solid #aaa;
+    padding:6px;
 }
 
-.badge{
-  width:100%;
-  padding:6px 8px;
-  border-radius:8px;
-  color:#000;
-  font-weight:900;
-  text-align:center;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  border:1px solid rgba(255,255,255,.12);
+.gold {
+    outline:3px solid gold;
 }
-
-.legend-item .num{
-  margin-top:6px;
-  font-size:18px;
-  font-weight:900;
-  color:rgba(255,255,255,.86);
-}
-
-/* Regierung/Opposition */
-.bar-row{
-  display:grid;
-  grid-template-columns: 110px 1fr 50px;
-  align-items:center;
-  gap:10px;
-  margin:12px 0;
-}
-.bar-row .left{
-  font-size:18px;
-  font-weight:900;
-}
-.bar{
-  display:flex;
-  gap:6px;
-  justify-content:flex-start;
-  align-items:center;
-  min-height:30px;
-}
-.block{
-  width:44px;
-  height:28px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,.10);
-}
-.right{
-  text-align:right;
-  font-size:22px;
-  font-weight:950;
-  color:rgba(255,255,255,.86);
-}
-
-/* Editor */
-.editorGrid{ display:grid; gap:10px; }
-
-.fieldRow{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:10px;
-}
-
-.field{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
-
-.field label{
-  font-size:12px;
-  color:rgba(255,255,255,.70);
-  font-weight:800;
-  letter-spacing:.2px;
-}
-
-input, select{
-  height:40px;
-  padding:0 10px;
-  border-radius:10px;
-  border:1px solid var(--inputBorder);
-  background:var(--input);
-  color:rgba(255,255,255,.92);
-  outline:none;
-  font-weight:700;
-}
-
-input[type="color"]{ padding:0; height:40px; }
-
-.small{
-  font-size:12px;
-  color:rgba(255,255,255,.56);
-  font-weight:650;
-  line-height:1.35;
-}
-
-.btnRow{
-  display:flex;
-  gap:10px;
-  margin-top:6px;
-}
-
-button{
-  flex:1 1 0;
-  height:42px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.16);
-  background:var(--btn);
-  color:rgba(255,255,255,.92);
-  font-weight:950;
-  cursor:pointer;
-}
-
-button:active{ transform:translateY(1px); }
-
-hr.sep{
-  border:none;
-  border-top:1px solid rgba(255,255,255,.10);
-  margin:12px 0;
-}
-
-.table{
-  width:100%;
-  border-collapse:separate;
-  border-spacing:0 8px;
-}
-
-.table th{
-  text-align:left;
-  font-size:12px;
-  color:rgba(255,255,255,.62);
-  font-weight:900;
-  padding:0 6px 4px;
-}
-
-.partyRow{
-  background:#111;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:12px;
-}
-
-.partyRow td{
-  padding:8px 6px;
-  vertical-align:middle;
-}
-
-.partyRow input, .partyRow select{
-  width:100%;
-  height:36px;
-  border-radius:10px;
-}
-
-.iconBtn{
-  width:40px;
-  height:36px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.16);
-  background:rgba(255,255,255,.08);
-  color:rgba(255,255,255,.92);
-  font-weight:950;
-  cursor:pointer;
-}
-
-.orderBtns{
-  display:flex;
-  gap:6px;
-  justify-content:flex-end;
-}
-
-.orderBtns .iconBtn{ width:36px; }
-
-[draggable="true"]{ user-select:none; }
-.dragOver{ outline:2px solid rgba(255,255,255,.22); }
 </style>
 </head>
 
 <body>
-<div class="container">
 
-  <!-- =================== REGIERUNG (ANZEIGE) =================== -->
-  <div class="card">
-    <h2>Regierung</h2>
+<div class="legend" id="legend"></div>
 
-    <div class="label">Politiker</div>
-    <div class="row">
-      <div class="avatar" id="leader-avatar"></div>
-      <div>
-        <div class="name" id="leader-name"></div>
-        <div class="sub" id="leader-title"></div>
-      </div>
-    </div>
+<div class="wrapper">
 
-    <div class="label">Regierungsparteien</div>
-    <div id="gov-parties"></div>
-  </div>
+<h2>Konklave</h2>
 
-  <!-- =================== PARLAMENT (ANZEIGE) =================== -->
-  <div class="card">
-    <h2>Parlament</h2>
+<button onclick="addCard()">+ Kandidat</button>
+<div class="container" id="cards"></div>
 
-    <div class="parliament">
-      <svg id="parliamentSvg"></svg>
-    </div>
+<hr>
 
-    <div class="label">Sitze im Parlament: <span id="seat-count"></span></div>
-    <div class="legend" id="legend"></div>
-  </div>
+Vorname: <input id="first">
+Nachname: <input id="last">
+Papstname: <input id="pope">
 
-  <!-- =================== REG/OPP (ANZEIGE) =================== -->
-  <div class="card">
-    <h2>Regierung &amp; Opposition</h2>
+<br><br>
 
-    <div class="bar-row">
-      <div class="left">Regierung</div>
-      <div class="bar" id="gov-bar"></div>
-      <div class="right" id="gov-count"></div>
-    </div>
+<button onclick="showPapam()">Habemus Papam anzeigen</button>
 
-    <div class="bar-row">
-      <div class="left">Opposition</div>
-      <div class="bar" id="opp-bar"></div>
-      <div class="right" id="opp-count"></div>
-    </div>
-  </div>
+<div class="papam" id="papam"></div>
 
-  <!-- =================== EDITOR =================== -->
-  <div class="card">
-    <h2>Editor</h2>
+<hr>
 
-    <div class="editorGrid">
-      <div class="label">Regierungschef</div>
-      <div class="fieldRow">
-        <div class="field">
-          <label>Name</label>
-          <input id="editLeaderName" type="text" />
-        </div>
-        <div class="field">
-          <label>Amt</label>
-          <input id="editLeaderTitle" type="text" />
-        </div>
-      </div>
-      <div class="fieldRow">
-        <div class="field">
-          <label>Avatar-Farbe (kleines Bild)</label>
-          <input id="editLeaderColor" type="color" />
-        </div>
-        <div class="field">
-          <label>Parlament gesamt</label>
-          <input id="editParliamentSize" type="number" min="0" step="1" />
-        </div>
-      </div>
+Wähler: <input id="total" value="120" oninput="updateThreshold()">
+→ 2/3 = <span id="thresholdDisplay">80</span>
 
-      <div class="fieldRow">
-        <div class="field">
-          <label>Halbkreis: Dicke</label>
-          <input id="editThickness" type="range" min="20" max="120" step="1" />
-        </div>
-        <div class="field">
-          <label>Halbkreis: Größe</label>
-          <input id="editRadius" type="range" min="90" max="190" step="1" />
-        </div>
-      </div>
+<br><br>
 
-      <div class="small">
-        Segment-Trennung: Es gibt keine “Lücke”, sondern nur eine dünne weiße Linie (fix). Reihenfolge anpassbar mit ↑/↓.
-        Am Desktop geht zusätzlich Drag &amp; Drop.
-      </div>
+<button onclick="addRound()">+ Wahlgang</button>
 
-      <hr class="sep" />
-
-      <div class="label">Parteien (editierbar)</div>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Farbe</th>
-            <th>Sitze</th>
-            <th>Reg./Opp.</th>
-            <th style="text-align:right;">Ordnung</th>
-          </tr>
-        </thead>
-        <tbody id="partyTableBody"></tbody>
-      </table>
-
-      <div class="btnRow">
-        <button id="addPartyBtn">+ Partei</button>
-        <button id="sumTotalBtn">Gesamt = Summe</button>
-      </div>
-
-      <div class="btnRow">
-        <button id="saveBtn">Speichern (im Browser)</button>
-        <button id="resetBtn">Reset</button>
-      </div>
-    </div>
-  </div>
+<table>
+<thead><tr id="header"><th>WG</th></tr></thead>
+<tbody id="body"></tbody>
+</table>
 
 </div>
 
 <script>
-/* =======================
-   STATE / DEFAULTS
-======================= */
-const DEFAULT_STATE = {
-  leader: { name: "Markus Söder", title: "Ministerpräsident", color: "#444444" },
-  parliamentSize: 203,
-  radius: 140,
-  thickness: 72,          // dicker Ring (wie du willst)
-  separator: 4,           // <-- dünne weiße Linie (Stroke) zwischen Segmenten
-  parties: [
-    { name: "Grüne", seats: 32, color: "#0a8f08", gov: false },
-    { name: "SPD", seats: 17, color: "#e00000", gov: false },
-    { name: "CSU", seats: 85, color: "#000000", gov: true },
-    { name: "FW", seats: 37, color: "#ff9500", gov: true },
-    { name: "AfD", seats: 32, color: "#7dd3ff", gov: false }
-  ]
+
+/* ===== SKALA ===== */
+const labels={
+EK:"Erzkonservativ",
+KON:"Konservativ",
+GK:"Gemäßigt konservativ",
+MOD:"Moderat",
+GL:"Gemäßigt liberal",
+LIB:"Liberal",
+PRO:"Progressiv"
 };
 
-function loadState(){
-  try{
-    const raw = localStorage.getItem("parlament_dashboard_state");
-    if(!raw) return structuredClone(DEFAULT_STATE);
-    const parsed = JSON.parse(raw);
-    return { ...structuredClone(DEFAULT_STATE), ...parsed };
-  }catch{
-    return structuredClone(DEFAULT_STATE);
-  }
+const colors={
+EK:"#000080",
+KON:"#0F52BA",
+GK:"#3B77D4",
+MOD:"#C2B280",
+GL:"#FF4545",
+LIB:"#FF0000",
+PRO:"#CC0000"
+};
+
+const types=Object.keys(labels);
+
+/* ===== LEGENDE ===== */
+function buildLegend(){
+    const l=document.getElementById("legend");
+    l.innerHTML="<b>Ausrichtungen</b>";
+
+    types.forEach(t=>{
+        const d=document.createElement("div");
+        d.innerHTML=`
+        <span style="background:${colors[t]};width:15px;height:10px;display:inline-block;margin-right:5px"></span>
+        ${t} - ${labels[t]}
+        `;
+        l.appendChild(d);
+    });
 }
 
-let state = loadState();
-const $ = (id)=>document.getElementById(id);
+/* ===== DATEN ===== */
+let candidates=[];
+let rounds=[];
+let threshold=80;
 
-function sumSeats(){
-  return state.parties.reduce((a,p)=>a + (Number(p.seats)||0), 0);
+/* ===== KARTEN ===== */
+function addCard(){
+    candidates.push({name:"",nation:"",age:"",role:"",type:null,img:null});
+    renderAll();
 }
 
-function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
-
-function textColorFor(hex){
-  const h = hex.replace("#","");
-  const v = parseInt(h.length===3 ? h.split("").map(x=>x+x).join("") : h, 16);
-  const r=(v>>16)&255,g=(v>>8)&255,b=v&255;
-  const l=(0.2126*r+0.7152*g+0.0722*b)/255;
-  return l < 0.58 ? "#fff" : "#000";
+function removeCard(i){
+    candidates.splice(i,1);
+    renderAll();
 }
 
-function escapeHtml(s){
-  return String(s)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#39;");
-}
+function renderCards(){
+    const c=document.getElementById("cards");
+    c.innerHTML="";
 
-/* =======================
-   GEOMETRY (donut segments)
-======================= */
-function polar(cx, cy, r, a){
-  // a in radians; 0 = right, PI/2 = down (SVG coords y down)
-  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
-}
+    candidates.forEach((cand,i)=>{
+        const div=document.createElement("div");
+        div.className="card";
 
-function donutSegmentPath(cx, cy, rOuter, rInner, aStart, aEnd){
-  // draws along top half: angles decreasing from PI to 0 (clockwise in our usage)
-  const p1 = polar(cx, cy, rOuter, aStart);
-  const p2 = polar(cx, cy, rOuter, aEnd);
-  const p3 = polar(cx, cy, rInner, aEnd);
-  const p4 = polar(cx, cy, rInner, aStart);
+        div.innerHTML=`
+        <button class="delete-btn" onclick="removeCard(${i})">x</button>
+        <div class="img"></div>
 
-  const delta = Math.abs(aStart - aEnd);
-  const largeArc = delta > Math.PI ? 1 : 0;
+        <input placeholder="Name" value="${cand.name}" 
+        onchange="candidates[${i}].name=this.value; renderMatrix()">
 
-  // If we go from aStart (bigger) to aEnd (smaller), we want the short arc on top => sweep 0
-  const sweepOuter = 0;
-  const sweepInner = 1;
+        <input placeholder="Nation" value="${cand.nation}" 
+        onchange="candidates[${i}].nation=this.value">
 
-  return [
-    `M ${p1.x.toFixed(3)} ${p1.y.toFixed(3)}`,
-    `A ${rOuter} ${rOuter} 0 ${largeArc} ${sweepOuter} ${p2.x.toFixed(3)} ${p2.y.toFixed(3)}`,
-    `L ${p3.x.toFixed(3)} ${p3.y.toFixed(3)}`,
-    `A ${rInner} ${rInner} 0 ${largeArc} ${sweepInner} ${p4.x.toFixed(3)} ${p4.y.toFixed(3)}`,
-    "Z"
-  ].join(" ");
-}
+        <input placeholder="Alter" value="${cand.age}" 
+        onchange="candidates[${i}].age=this.value">
 
-/* =======================
-   RENDER
-======================= */
-function render(){
-  // Leader display
-  $("leader-name").textContent = state.leader.name;
-  $("leader-title").textContent = state.leader.title;
-  $("leader-avatar").style.background = state.leader.color;
+        <textarea placeholder="Rolle" 
+        onchange="candidates[${i}].role=this.value">${cand.role}</textarea>
 
-  // Gov parties list
-  const govBox = $("gov-parties");
-  govBox.innerHTML = "";
-  state.parties.filter(p=>p.gov).forEach(p=>{
-    const r = document.createElement("div");
-    r.className="row";
-    r.innerHTML = `
-      <div class="avatar" style="background:${p.color}"></div>
-      <div>
-        <div class="name">${escapeHtml(p.name)}</div>
-        <div class="sub">Regierungspartei</div>
-      </div>`;
-    govBox.appendChild(r);
-  });
-
-  // Parliament label
-  $("seat-count").textContent = String(state.parliamentSize);
-
-  // Parliament SVG
-  renderParliamentSvg();
-
-  // Legend
-  renderLegend();
-
-  // Gov/Opp
-  renderGovOpp();
-
-  // Editor
-  renderEditor();
-}
-
-function renderParliamentSvg(){
-  const svg = $("parliamentSvg");
-
-  const r = Number(state.radius);
-  const thickness = Number(state.thickness);
-  const sep = Number(state.separator);
-
-  const rOuter = r;
-  const rInner = Math.max(10, r - thickness);
-
-  const pad = 18;
-  const w = 2*r + 2*pad;
-  const h = r + pad + 10;
-
-  const cx = pad + r;
-  const cy = pad + r;
-
-  svg.setAttribute("width", w);
-  svg.setAttribute("height", h);
-  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  svg.innerHTML = "";
-
-  const total = Math.max(1, Number(state.parliamentSize)||1);
-
-  // ✅ FIX: Halbkreis unten (Öffnung nach unten) => wir zeichnen die UNTERE Halbkugel:
-  // Winkel von 0 (rechts) bis PI (links), also "unten" statt "oben".
-  let a = 0;
-
-  state.parties.forEach(p=>{
-    const seats = Number(p.seats)||0;
-    const delta = (seats / total) * Math.PI;
-    const aNext = a + delta;
-
-    if(delta > 0.00001){
-      const pathD = donutSegmentPath(cx, cy, rOuter, rInner, a, aNext);
-      const seg = document.createElementNS("http://www.w3.org/2000/svg","path");
-      seg.setAttribute("d", pathD);
-      seg.setAttribute("fill", p.color);
-      seg.setAttribute("stroke", "#ffffff");
-      seg.setAttribute("stroke-width", String(sep));
-      seg.setAttribute("stroke-linejoin","round");
-      svg.appendChild(seg);
-    }
-
-    a = aNext;
-  });
-
-  // Konturen passend zur unteren Halbrundung
-  const contourOuter = document.createElementNS("http://www.w3.org/2000/svg","path");
-  contourOuter.setAttribute("d", arcPath(cx, cy, rOuter, 0, Math.PI));
-  contourOuter.setAttribute("fill","none");
-  contourOuter.setAttribute("stroke","#ffffff");
-  contourOuter.setAttribute("stroke-width", "4");
-  contourOuter.setAttribute("opacity","0.95");
-  svg.appendChild(contourOuter);
-
-  const contourInner = document.createElementNS("http://www.w3.org/2000/svg","path");
-  contourInner.setAttribute("d", arcPath(cx, cy, rInner, 0, Math.PI));
-  contourInner.setAttribute("fill","none");
-  contourInner.setAttribute("stroke","#ffffff");
-  contourInner.setAttribute("stroke-width", "4");
-  contourInner.setAttribute("opacity","0.95");
-  svg.appendChild(contourInner);
-}
-
-  // Optional: a clean outer/inner white contour like iOS screenshot (subtle)
-  const contourOuter = document.createElementNS("http://www.w3.org/2000/svg","path");
-  contourOuter.setAttribute("d", arcPath(cx, cy, rOuter, Math.PI, 0));
-  contourOuter.setAttribute("fill","none");
-  contourOuter.setAttribute("stroke","#ffffff");
-  contourOuter.setAttribute("stroke-width", "4");
-  contourOuter.setAttribute("opacity","0.95");
-  svg.appendChild(contourOuter);
-
-  const contourInner = document.createElementNS("http://www.w3.org/2000/svg","path");
-  contourInner.setAttribute("d", arcPath(cx, cy, rInner, Math.PI, 0));
-  contourInner.setAttribute("fill","none");
-  contourInner.setAttribute("stroke","#ffffff");
-  contourInner.setAttribute("stroke-width", "4");
-  contourInner.setAttribute("opacity","0.95");
-  svg.appendChild(contourInner);
-}
-
-function arcPath(cx, cy, radius, aStart, aEnd){
-  // aStart > aEnd for top half; sweep 0
-  const p1 = polar(cx, cy, radius, aStart);
-  const p2 = polar(cx, cy, radius, aEnd);
-  const largeArc = Math.abs(aStart - aEnd) > Math.PI ? 1 : 0;
-  const sweep = 0;
-  return `M ${p1.x.toFixed(3)} ${p1.y.toFixed(3)} A ${radius} ${radius} 0 ${largeArc} ${sweep} ${p2.x.toFixed(3)} ${p2.y.toFixed(3)}`;
-}
-
-function renderLegend(){
-  const legend = $("legend");
-  legend.innerHTML = "";
-  state.parties.forEach(p=>{
-    const item = document.createElement("div");
-    item.className="legend-item";
-    const txt = textColorFor(p.color);
-    item.innerHTML = `
-      <div class="badge" style="background:${p.color};color:${txt}">${escapeHtml(p.name)}</div>
-      <div class="num">${Number(p.seats)||0}</div>
-    `;
-    legend.appendChild(item);
-  });
-}
-
-function renderGovOpp(){
-  const govSeats = state.parties.filter(p=>p.gov).reduce((a,p)=>a+(Number(p.seats)||0),0);
-  const oppSeats = (Number(state.parliamentSize)||0) - govSeats;
-
-  $("gov-count").textContent = govSeats;
-  $("opp-count").textContent = oppSeats;
-
-  const govBar = $("gov-bar");
-  const oppBar = $("opp-bar");
-  govBar.innerHTML = "";
-  oppBar.innerHTML = "";
-
-  state.parties.filter(p=>p.gov).forEach(p=>{
-    const b = document.createElement("div");
-    b.className="block";
-    b.style.background = p.color;
-    govBar.appendChild(b);
-  });
-
-  state.parties.filter(p=>!p.gov).forEach(p=>{
-    const b = document.createElement("div");
-    b.className="block";
-    b.style.background = p.color;
-    oppBar.appendChild(b);
-  });
-}
-
-function renderEditor(){
-  $("editLeaderName").value = state.leader.name;
-  $("editLeaderTitle").value = state.leader.title;
-  $("editLeaderColor").value = state.leader.color;
-
-  $("editParliamentSize").value = state.parliamentSize;
-  $("editThickness").value = state.thickness;
-  $("editRadius").value = state.radius;
-
-  const body = $("partyTableBody");
-  body.innerHTML = "";
-
-  state.parties.forEach((p, idx)=>{
-    const tr = document.createElement("tr");
-    tr.className="partyRow";
-    tr.setAttribute("draggable","true");
-    tr.dataset.idx = idx;
-
-    tr.innerHTML = `
-      <td><input data-k="name" data-i="${idx}" type="text" value="${escapeHtml(p.name)}"></td>
-      <td><input data-k="color" data-i="${idx}" type="color" value="${escapeHtml(p.color)}"></td>
-      <td><input data-k="seats" data-i="${idx}" type="number" min="0" step="1" value="${Number(p.seats)||0}"></td>
-      <td>
-        <select data-k="gov" data-i="${idx}">
-          <option value="true" ${p.gov ? "selected":""}>Regierung</option>
-          <option value="false" ${!p.gov ? "selected":""}>Opposition</option>
-        </select>
-      </td>
-      <td>
-        <div class="orderBtns">
-          <button class="iconBtn" title="Hoch" data-up="${idx}">↑</button>
-          <button class="iconBtn" title="Runter" data-down="${idx}">↓</button>
-          <button class="iconBtn" title="Löschen" data-del="${idx}">✕</button>
+        <div class="type" onclick="cycleType(${i})">
+            ${cand.type||"---"}
         </div>
-      </td>
-    `;
+        `;
 
-    body.appendChild(tr);
-  });
+        const imgDiv=div.querySelector(".img");
+        if(cand.img) imgDiv.style.backgroundImage=`url(${cand.img})`;
 
-  // input bindings
-  body.querySelectorAll("input,select").forEach(el=>{
-    el.addEventListener("input", onPartyEdit);
-    el.addEventListener("change", onPartyEdit);
-  });
+        imgDiv.onclick=()=>{
+            const input=document.createElement("input");
+            input.type="file";
+            input.onchange=e=>{
+                const r=new FileReader();
+                r.onload=ev=>{
+                    candidates[i].img=ev.target.result;
+                    renderCards();
+                };
+                r.readAsDataURL(e.target.files[0]);
+            };
+            input.click();
+        };
 
-  // order & delete
-  body.querySelectorAll("button[data-del]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const i = Number(btn.getAttribute("data-del"));
-      state.parties.splice(i,1);
-      render();
+        if(cand.type){
+            div.querySelector(".type").style.background=colors[cand.type];
+        }
+
+        c.appendChild(div);
     });
-  });
-
-  body.querySelectorAll("button[data-up]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const i = Number(btn.getAttribute("data-up"));
-      moveParty(i, i-1);
-    });
-  });
-  body.querySelectorAll("button[data-down]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const i = Number(btn.getAttribute("data-down"));
-      moveParty(i, i+1);
-    });
-  });
-
-  setupDnD(body);
 }
 
-function onPartyEdit(e){
-  const el = e.target;
-  const k = el.getAttribute("data-k");
-  const i = Number(el.getAttribute("data-i"));
-  if(!Number.isFinite(i) || !state.parties[i]) return;
-
-  if(k === "name") state.parties[i].name = el.value;
-  if(k === "color") state.parties[i].color = el.value;
-  if(k === "seats") state.parties[i].seats = Number(el.value)||0;
-  if(k === "gov") state.parties[i].gov = (el.value === "true");
-
-  render();
+function cycleType(i){
+    let idx=types.indexOf(candidates[i].type);
+    idx=(idx+1)%types.length;
+    candidates[i].type=types[idx];
+    renderCards();
 }
 
-function moveParty(from, to){
-  if(to < 0 || to >= state.parties.length) return;
-  const item = state.parties.splice(from,1)[0];
-  state.parties.splice(to,0,item);
-  render();
+/* ===== MATRIX ===== */
+function renderMatrix(){
+    const h=document.getElementById("header");
+    h.innerHTML="<th>WG</th>";
+
+    candidates.forEach(c=>{
+        const th=document.createElement("th");
+        th.innerText=c.name||"-";
+        h.appendChild(th);
+    });
+
+    const body=document.getElementById("body");
+    body.innerHTML="";
+
+    rounds.forEach((r,ri)=>{
+        const tr=document.createElement("tr");
+
+        let row=`<td>WG ${ri+1}</td>`;
+
+        candidates.forEach((c,ci)=>{
+            row+=`<td>
+            <input type="number" value="${r[ci]||0}"
+            oninput="updateVote(${ri},${ci},this.value)">
+            </td>`;
+        });
+
+        tr.innerHTML=row;
+        body.appendChild(tr);
+    });
 }
 
-function setupDnD(tbody){
-  let dragIndex = null;
-
-  tbody.querySelectorAll("tr[draggable='true']").forEach(tr=>{
-    tr.addEventListener("dragstart", (e)=>{
-      dragIndex = Number(tr.dataset.idx);
-      e.dataTransfer.effectAllowed = "move";
-    });
-
-    tr.addEventListener("dragover", (e)=>{
-      e.preventDefault();
-      tr.classList.add("dragOver");
-    });
-
-    tr.addEventListener("dragleave", ()=>{
-      tr.classList.remove("dragOver");
-    });
-
-    tr.addEventListener("drop", (e)=>{
-      e.preventDefault();
-      tr.classList.remove("dragOver");
-      const dropIndex = Number(tr.dataset.idx);
-      if(dragIndex === null || !Number.isFinite(dropIndex)) return;
-      if(dragIndex === dropIndex) return;
-      moveParty(dragIndex, dropIndex);
-      dragIndex = null;
-    });
-
-    tr.addEventListener("dragend", ()=>{
-      tbody.querySelectorAll(".dragOver").forEach(x=>x.classList.remove("dragOver"));
-      dragIndex = null;
-    });
-  });
+function addRound(){
+    rounds.push([]);
+    renderMatrix();
 }
 
-/* =======================
-   EDITOR EVENTS
-======================= */
-$("editLeaderName").addEventListener("input", (e)=>{ state.leader.name = e.target.value; render(); });
-$("editLeaderTitle").addEventListener("input", (e)=>{ state.leader.title = e.target.value; render(); });
-$("editLeaderColor").addEventListener("input", (e)=>{ state.leader.color = e.target.value; render(); });
+function updateVote(r,c,val){
+    rounds[r][c]=Number(val);
+    check();
+}
 
-$("editParliamentSize").addEventListener("input", (e)=>{
-  state.parliamentSize = Math.max(0, Number(e.target.value)||0);
-  render();
-});
+/* ===== LOGIK ===== */
+function updateThreshold(){
+    const total=Number(document.getElementById("total").value)||0;
+    threshold=Math.ceil((2/3)*total);
+    document.getElementById("thresholdDisplay").innerText=threshold;
+}
 
-$("editThickness").addEventListener("input", (e)=>{
-  state.thickness = clamp(Number(e.target.value)||72, 20, 120);
-  render();
-});
+function check(){
+    document.querySelectorAll("#body tr").forEach(row=>{
+        row.querySelectorAll("input").forEach(i=>{
+            i.classList.remove("gold");
+            if(Number(i.value)>=threshold){
+                i.classList.add("gold");
+                showPapam();
+            }
+        });
+    });
+}
 
-$("editRadius").addEventListener("input", (e)=>{
-  state.radius = clamp(Number(e.target.value)||140, 90, 190);
-  render();
-});
+/* ===== HABEMUS PAPAM ===== */
+function showPapam(){
+    const first=document.getElementById("first").value || "Nomen";
+    const last=document.getElementById("last").value || "Nomen";
+    const pope=document.getElementById("pope").value || "Nomen";
 
-$("addPartyBtn").addEventListener("click", ()=>{
-  state.parties.push({ name:"Neue Partei", seats:0, color:"#888888", gov:false });
-  render();
-});
+    const text=`Annuntio vobis gaudium magnum:
+Habemus Papam!
 
-$("sumTotalBtn").addEventListener("click", ()=>{
-  state.parliamentSize = sumSeats();
-  render();
-});
+Eminentissimum ac reverendissimum Dominum,
+Dominum ${first} Sanctae Romanae Ecclesiae Cardinalem ${last},
+qui sibi nomen imposuit ${pope}.`;
 
-$("saveBtn").addEventListener("click", ()=>{
-  localStorage.setItem("parlament_dashboard_state", JSON.stringify(state));
-  alert("Gespeichert. Beim nächsten Öffnen bleibt alles so.");
-});
+    const box=document.getElementById("papam");
+    box.style.display="block";
+    box.innerText=text;
+}
 
-$("resetBtn").addEventListener("click", ()=>{
-  localStorage.removeItem("parlament_dashboard_state");
-  state = structuredClone(DEFAULT_STATE);
-  render();
-});
+/* ===== RENDER ===== */
+function renderAll(){
+    renderCards();
+    renderMatrix();
+}
 
-/* init */
-render();
+/* START */
+buildLegend();
+updateThreshold();
+addCard();addCard();addCard();
+
 </script>
+
 </body>
 </html>
